@@ -11,8 +11,80 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- Clean White Theme Stylesheet -->
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+    <!-- Clean White Theme Stylesheet with Cache Busting -->
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v={{ file_exists(public_path('css/style.css')) ? filemtime(public_path('css/style.css')) : time() }}">
+
+    <!-- Critical Navbar & Layout Fallback Styles -->
+    <style>
+        .nav-content {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+        }
+        .nav-top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            gap: 16px;
+        }
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            padding: 4px 0;
+            width: 100%;
+        }
+        .nav-links::-webkit-scrollbar {
+            display: none;
+        }
+        .nav-link {
+            font-size: 0.84rem;
+            font-weight: 600;
+            color: #475569 !important;
+            text-decoration: none !important;
+            padding: 7px 16px;
+            border-radius: 9999px;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+            display: inline-block;
+        }
+        .nav-link:hover {
+            color: #0f172a !important;
+            background: #e2e8f0;
+            text-decoration: none !important;
+        }
+        .nav-link.active {
+            color: #ffffff !important;
+            background: #2563eb !important;
+            border-color: #2563eb !important;
+            font-weight: 700;
+            text-decoration: none !important;
+        }
+        @media (min-width: 1024px) {
+            .nav-content {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+            .nav-top-row {
+                width: auto;
+                justify-content: flex-start;
+            }
+            .nav-links {
+                width: auto;
+                justify-content: center;
+                border-top: none;
+                padding: 0;
+            }
+        }
+    </style>
     @stack('styles')
 </head>
 <body>
