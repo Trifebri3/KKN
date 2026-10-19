@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Kunjungan;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -40,16 +41,27 @@ class KunjunganController extends Controller
         $nama = $isAnonymousAction ? 'Anonymous' : $rawName;
         $jenisKunjungan = ! empty($rawJenis) ? $rawJenis : ($isAnonymousAction ? 'Kunjungan Singkat / Anonim' : 'Kunjungan Biasa');
 
-        $kunjungan = Kunjungan::create([
-            'nama' => $nama,
-            'no_telpon' => $rawPhone ?: null,
-            'jenis_kunjungan' => $jenisKunjungan,
-            'instansi' => $rawInstansi ?: null,
-            'keperluan' => $rawKeperluan ?: null,
-            'is_anonymous' => $isAnonymousAction,
-            'ip_address' => $request->ip(),
-            'user_agent' => substr((string) $request->userAgent(), 0, 500),
-        ]);
+        $kunjungan = null;
+        for ($i = 0; $i < 3; $i++) {
+            try {
+                $kunjungan = Kunjungan::create([
+                    'ticket_code' => Kunjungan::generateUniqueTicketCode(),
+                    'nama' => $nama,
+                    'no_telpon' => $rawPhone ?: null,
+                    'jenis_kunjungan' => $jenisKunjungan,
+                    'instansi' => $rawInstansi ?: null,
+                    'keperluan' => $rawKeperluan ?: null,
+                    'is_anonymous' => $isAnonymousAction,
+                    'ip_address' => $request->ip(),
+                    'user_agent' => substr((string) $request->userAgent(), 0, 500),
+                ]);
+                break;
+            } catch (UniqueConstraintViolationException $e) {
+                if ($i === 2) {
+                    throw $e;
+                }
+            }
+        }
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
@@ -77,16 +89,27 @@ class KunjunganController extends Controller
      */
     public function quick(Request $request): RedirectResponse|JsonResponse
     {
-        $kunjungan = Kunjungan::create([
-            'nama' => 'Anonymous',
-            'no_telpon' => null,
-            'jenis_kunjungan' => 'Kunjungan Singkat / Anonim',
-            'instansi' => null,
-            'keperluan' => 'Pencatatan cepat presensi kunjungan',
-            'is_anonymous' => true,
-            'ip_address' => $request->ip(),
-            'user_agent' => substr((string) $request->userAgent(), 0, 500),
-        ]);
+        $kunjungan = null;
+        for ($i = 0; $i < 3; $i++) {
+            try {
+                $kunjungan = Kunjungan::create([
+                    'ticket_code' => Kunjungan::generateUniqueTicketCode(),
+                    'nama' => 'Anonymous',
+                    'no_telpon' => null,
+                    'jenis_kunjungan' => 'Kunjungan Singkat / Anonim',
+                    'instansi' => null,
+                    'keperluan' => 'Pencatatan cepat presensi kunjungan',
+                    'is_anonymous' => true,
+                    'ip_address' => $request->ip(),
+                    'user_agent' => substr((string) $request->userAgent(), 0, 500),
+                ]);
+                break;
+            } catch (UniqueConstraintViolationException $e) {
+                if ($i === 2) {
+                    throw $e;
+                }
+            }
+        }
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
