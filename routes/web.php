@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\KunjunganController;
+use App\Http\Controllers\PengunjungController;
 use App\Http\Controllers\PlaygroundController;
 use App\Http\Controllers\ScreenController;
 use Illuminate\Support\Facades\Route;
@@ -21,3 +22,7 @@ Route::post('/playground/chat', [PlaygroundController::class, 'chat'])->name('pl
 Route::post('/playground/faq/{id}/like', [PlaygroundController::class, 'likeFaq'])->name('playground.faq.like');
 Route::post('/playground/ask', [PlaygroundController::class, 'askQuestion'])->name('playground.ask');
 Route::post('/playground/clear-chat', [PlaygroundController::class, 'clearChat'])->name('playground.clear_chat');
+
+// 4. Data Pengunjung & Statistik (Menu Lihat & Cetak PDF)
+Route::get('/pengunjung', [PengunjungController::class, 'index'])->name('pengunjung.index');
+Route::get('/pengunjung/cetak', [PengunjungController::class, 'cetak'])->name('pengunjung.cetak');

@@ -21,25 +21,42 @@
         <header class="top-navbar">
             <div class="container">
                 <div class="nav-content">
-                    <a href="{{ route('screen.index') }}" class="brand-badge">
-                        <div class="brand-logo-mark">CAP</div>
-                        <div class="brand-text">
-                            <h1>Collaborative Action Program</h1>
-                            <p>Laporan Program dan Pusat Informasi</p>
-                        </div>
-                    </a>
+                    <div class="nav-top-row">
+                        <a href="{{ route('screen.index') }}" class="brand-badge">
+                            <div class="brand-logo-mark">CAP</div>
+                            <div class="brand-text">
+                                <h1>Collaborative Action Program</h1>
+                                <p>Laporan Program dan Pusat Informasi</p>
+                            </div>
+                        </a>
 
-                    <div class="nav-actions">
-                        <div class="status-pill">
-                            <span class="status-dot"></span>
-                            <span>Sistem Aktif</span>
-                        </div>
+                        <div class="nav-actions">
+                            <div class="status-pill">
+                                <span class="status-dot"></span>
+                                <span>Sistem Aktif</span>
+                            </div>
 
-                        <div class="clock-display" id="navClockBox">
-                            <span class="clock-time" id="navClockTime">--:-- WIB</span>
-                            <span class="clock-date" id="navClockDate">Memuat tanggal...</span>
+                            <div class="clock-display" id="navClockBox">
+                                <span class="clock-time" id="navClockTime">--:-- WIB</span>
+                                <span class="clock-date" id="navClockDate">Memuat tanggal...</span>
+                            </div>
                         </div>
                     </div>
+
+                    <nav class="nav-links">
+                        <a href="{{ route('screen.index') }}" class="nav-link {{ request()->routeIs('screen.*') ? 'active' : '' }}">
+                            Layar Utama
+                        </a>
+                        <a href="{{ route('kunjungan.index') }}" class="nav-link {{ request()->routeIs('kunjungan.*') ? 'active' : '' }}">
+                            Buku Tamu
+                        </a>
+                        <a href="{{ route('playground.index') }}" class="nav-link {{ request()->routeIs('playground.*') ? 'active' : '' }}">
+                            Playground & AI
+                        </a>
+                        <a href="{{ route('pengunjung.index') }}" class="nav-link {{ request()->routeIs('pengunjung.*') ? 'active' : '' }}">
+                            Data Pengunjung & Statistik
+                        </a>
+                    </nav>
                 </div>
             </div>
         </header>

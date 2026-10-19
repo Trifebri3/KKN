@@ -13,6 +13,12 @@
                 Arahkan kamera ponsel Anda ke salah satu kode di bawah ini untuk mencatat kehadiran kunjungan atau mengakses pusat tanya jawab dan asisten virtual.
             </p>
             <div style="margin-top: 14px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+                <a href="{{ route('pengunjung.index') }}" class="btn btn-primary btn-sm">
+                    Lihat Data Pengunjung & Statistik
+                </a>
+                <a href="{{ route('pengunjung.cetak') }}" target="_blank" class="btn btn-outline btn-sm">
+                    Cetak Laporan PDF
+                </a>
                 <button type="button" class="btn btn-outline btn-sm" onclick="toggleFullscreen()">
                     Mode Layar Penuh
                 </button>
@@ -128,7 +134,12 @@
                     <h3 class="section-title">
                         Daftar Kehadiran Terkini
                     </h3>
-                    <span class="status-pill" style="font-size: 0.72rem; padding: 2px 8px;">Pembaruan Otomatis</span>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <span class="status-pill" style="font-size: 0.72rem; padding: 2px 8px;">Pembaruan Otomatis</span>
+                        <a href="{{ route('pengunjung.index') }}" class="btn btn-outline btn-sm" style="padding: 4px 10px; font-size: 0.76rem;">
+                            Lihat Semua
+                        </a>
+                    </div>
                 </div>
 
                 <div class="ticker-list" id="tickerList">

@@ -12,21 +12,54 @@ use Illuminate\View\View;
 class KunjunganController extends Controller
 {
     /**
-     * Show the visitor attendance check-in form.
+     * Show visitor check-in page.
+     * Automatically registers presence as Anonymous upon QR scan if not already registered in session.
      */
     public function index(Request $request): View
     {
-        $lastVisit = null;
-        if (session()->has('last_visit_id')) {
-            $lastVisit = Kunjungan::find(session('last_visit_id'));
+        $activeVisit = null;
+        $isJustScanned = false;
+
+        // Check if there is an active visit stored in session
+        if (session()->has('active_visit_id')) {
+            $activeVisit = Kunjungan::find(session('active_visit_id'));
         }
 
-        return view('kunjungan.index', compact('lastVisit'));
+        // Auto-record Anonymous visit immediately upon scan / fresh access
+        if (! $activeVisit || $request->has('baru')) {
+            for ($i = 0; $i < 3; $i++) {
+                try {
+                    $activeVisit = Kunjungan::create([
+                        'ticket_code' => Kunjungan::generateUniqueTicketCode(),
+                        'nama' => 'Anonymous',
+                        'no_telpon' => null,
+                        'jenis_kunjungan' => 'Kunjungan Singkat / Anonim',
+                        'instansi' => null,
+                        'keperluan' => 'Pencatatan otomatis saat pemindaian kode respon cepat (QR)',
+                        'is_anonymous' => true,
+                        'ip_address' => $request->ip(),
+                        'user_agent' => substr((string) $request->userAgent(), 0, 500),
+                    ]);
+                    $isJustScanned = true;
+                    session(['active_visit_id' => $activeVisit->id]);
+                    break;
+                } catch (UniqueConstraintViolationException $e) {
+                    if ($i === 2) {
+                        throw $e;
+                    }
+                }
+            }
+        }
+
+        return view('kunjungan.index', [
+            'visit' => $activeVisit,
+            'isJustScanned' => $isJustScanned,
+        ]);
     }
 
     /**
-     * Handle visitor check-in submission.
-     * Records presence as named visitor or Anonymous if fields are empty.
+     * Handle visitor check-in form update or submission.
+     * Updates the auto-recorded scan visit so no duplicate entry is created.
      */
     public function store(Request $request): RedirectResponse|JsonResponse
     {
@@ -37,28 +70,44 @@ class KunjunganController extends Controller
         $rawKeperluan = trim((string) $request->input('keperluan', ''));
         $isAnonymousAction = $request->boolean('is_anonymous') || empty($rawName);
 
-        // If name is empty, it records as Anonymous
         $nama = $isAnonymousAction ? 'Anonymous' : $rawName;
-        $jenisKunjungan = ! empty($rawJenis) ? $rawJenis : ($isAnonymousAction ? 'Kunjungan Singkat / Anonim' : 'Kunjungan Biasa');
+        $jenisKunjungan = ! empty($rawJenis) ? $rawJenis : ($isAnonymousAction ? 'Kunjungan Singkat / Anonim' : 'Konsultasi Program CAP');
+        $keperluan = $rawKeperluan ?: ($isAnonymousAction ? 'Kunjungan lokasi dan pemantauan program' : 'Konsultasi dan koordinasi');
 
-        $kunjungan = null;
-        for ($i = 0; $i < 3; $i++) {
-            try {
-                $kunjungan = Kunjungan::create([
-                    'ticket_code' => Kunjungan::generateUniqueTicketCode(),
-                    'nama' => $nama,
-                    'no_telpon' => $rawPhone ?: null,
-                    'jenis_kunjungan' => $jenisKunjungan,
-                    'instansi' => $rawInstansi ?: null,
-                    'keperluan' => $rawKeperluan ?: null,
-                    'is_anonymous' => $isAnonymousAction,
-                    'ip_address' => $request->ip(),
-                    'user_agent' => substr((string) $request->userAgent(), 0, 500),
-                ]);
-                break;
-            } catch (UniqueConstraintViolationException $e) {
-                if ($i === 2) {
-                    throw $e;
+        // Check if we can update the active visit from session or hidden input
+        $visitId = $request->input('visit_id') ?: session('active_visit_id');
+        $kunjungan = $visitId ? Kunjungan::find($visitId) : null;
+
+        if ($kunjungan) {
+            $kunjungan->update([
+                'nama' => $nama,
+                'no_telpon' => $rawPhone ?: null,
+                'jenis_kunjungan' => $jenisKunjungan,
+                'instansi' => $rawInstansi ?: null,
+                'keperluan' => $keperluan,
+                'is_anonymous' => $isAnonymousAction,
+            ]);
+        } else {
+            // If session expired, create fresh
+            for ($i = 0; $i < 3; $i++) {
+                try {
+                    $kunjungan = Kunjungan::create([
+                        'ticket_code' => Kunjungan::generateUniqueTicketCode(),
+                        'nama' => $nama,
+                        'no_telpon' => $rawPhone ?: null,
+                        'jenis_kunjungan' => $jenisKunjungan,
+                        'instansi' => $rawInstansi ?: null,
+                        'keperluan' => $keperluan,
+                        'is_anonymous' => $isAnonymousAction,
+                        'ip_address' => $request->ip(),
+                        'user_agent' => substr((string) $request->userAgent(), 0, 500),
+                    ]);
+                    session(['active_visit_id' => $kunjungan->id]);
+                    break;
+                } catch (UniqueConstraintViolationException $e) {
+                    if ($i === 2) {
+                        throw $e;
+                    }
                 }
             }
         }
@@ -66,7 +115,7 @@ class KunjunganController extends Controller
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
                 'status' => 'success',
-                'message' => 'Presensi berhasil dicatat.',
+                'message' => 'Data presensi berhasil diperbarui.',
                 'data' => [
                     'id' => $kunjungan->id,
                     'ticket_code' => $kunjungan->ticket_code,
@@ -80,12 +129,11 @@ class KunjunganController extends Controller
         }
 
         return redirect()->route('kunjungan.index')
-            ->with('last_visit_id', $kunjungan->id)
-            ->with('success', 'Kehadiran Anda berhasil dicatat.');
+            ->with('success', 'Data presensi berhasil diperbarui.');
     }
 
     /**
-     * Instant one-tap anonymous check-in endpoint.
+     * Instant one-tap anonymous check-in / reset endpoint.
      */
     public function quick(Request $request): RedirectResponse|JsonResponse
     {
@@ -103,6 +151,7 @@ class KunjunganController extends Controller
                     'ip_address' => $request->ip(),
                     'user_agent' => substr((string) $request->userAgent(), 0, 500),
                 ]);
+                session(['active_visit_id' => $kunjungan->id]);
                 break;
             } catch (UniqueConstraintViolationException $e) {
                 if ($i === 2) {
@@ -127,7 +176,6 @@ class KunjunganController extends Controller
         }
 
         return redirect()->route('kunjungan.index')
-            ->with('last_visit_id', $kunjungan->id)
             ->with('success', 'Presensi berhasil dicatat sebagai Tamu Anonim.');
     }
 }
